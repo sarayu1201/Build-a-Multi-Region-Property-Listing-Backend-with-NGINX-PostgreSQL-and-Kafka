@@ -44,6 +44,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 20s
 
   db-us:
     image: postgres:14
@@ -56,7 +57,7 @@ services:
       - postgres-data-us:/var/lib/postgresql/data
       - ./seeds:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d property_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d property_db"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -72,7 +73,7 @@ services:
       - postgres-data-eu:/var/lib/postgresql/data
       - ./seeds:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d property_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d property_db"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -88,13 +89,16 @@ services:
       - KAFKA_BROKER=kafka:29092
       - KAFKA_TOPIC=property-updates
     depends_on:
-      - db-us
-      - kafka
+      db-us:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://backend-us:8000/us/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/us/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 15s
 
   backend-eu:
     build:
@@ -107,13 +111,16 @@ services:
       - KAFKA_BROKER=kafka:29092
       - KAFKA_TOPIC=property-updates
     depends_on:
-      - db-eu
-      - kafka
+      db-eu:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://backend-eu:8000/eu/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/eu/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 15s
 
 volumes:
   postgres-data-us:
