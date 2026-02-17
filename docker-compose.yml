@@ -7,15 +7,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      backend-us:
-        condition: service_healthy
-      backend-eu:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "service", "nginx", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - backend-us
+      - backend-eu
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
@@ -39,11 +32,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    healthcheck:
-      test: ["CMD", "bash", "-c", "kafka-broker-api-versions.sh --bootstrap-server kafka:29092"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   db-us:
     image: postgres:14
@@ -55,11 +43,6 @@ services:
     volumes:
       - postgres-data-us:/var/lib/postgresql/data
       - ./seeds:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d property_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   db-eu:
     image: postgres:14
@@ -71,11 +54,6 @@ services:
     volumes:
       - postgres-data-eu:/var/lib/postgresql/data
       - ./seeds:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d property_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   backend-us:
     build:
@@ -90,11 +68,6 @@ services:
     depends_on:
       - db-us
       - kafka
-    healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://backend-us:8000/us/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   backend-eu:
     build:
@@ -109,11 +82,6 @@ services:
     depends_on:
       - db-eu
       - kafka
-    healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://backend-eu:8000/eu/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
 volumes:
   postgres-data-us:
